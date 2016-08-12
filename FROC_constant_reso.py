@@ -18,15 +18,15 @@ from scipy.ndimage.measurements import label
 from scipy.ndimage.morphology import binary_erosion, binary_dilation
 
 
-def getPara(predict, true, threshold, resolution, windowsize):
+def getPara(predict, true, threshold, windowsize):
     (TP, FP, TN, FN, class_lable) = perf_measure(true, predict, threshold)
     if((TP + FN) == 0):
         TPR = 0
     else:
         TPR = np.float(TP) / (TP + FN)
 
-    class_lable = class_lable.astype(bool).reshape(264,  132)
-    true = true.astype(bool).reshape((264,  132))
+    class_lable = class_lable.astype(bool).reshape(250,  130)
+    true = true.astype(bool).reshape((250,  130))
 
     num = 2
     x = np.arange( -num , num+1, 1)
@@ -77,19 +77,19 @@ def transfer_prob(y_score, threshold):
     return np.asarray(y_result)
 
 def generate_plotnum(windowsize):
-    y_score = np.load('./resolution/predicted_image.npy')
-    y_true = np.load('./resolution/answer_image.npy')
-    reso = np.load('./resolution/resolution.npy')
+    y_score = np.load('./resolution_augmented/predicted_image.npy')
+    y_true = np.load('./resolution_augmented/answer_image.npy')
+    #reso = np.load('./resolution_augmented/resolution.npy')
 
     y_score = y_score[0:y_score.shape[0], 1]
     y_true = y_true[0:y_true.shape[0], 1]
 
     scores = []
     trues = []
+    ysize = 250
+    xsize = 130
     next_start = 0
-    for i in range(len(reso)):
-        ysize = 264
-        xsize = 132
+    for i in range( y_score.shape[0]/ (ysize* xsize) ):
         scores.append(y_score[next_start: next_start + np.int(ysize * xsize)])
         trues.append(y_true[next_start: next_start + np.int(ysize * xsize)])
         next_start = np.int(next_start + ysize * xsize)
@@ -97,56 +97,56 @@ def generate_plotnum(windowsize):
 
     y_score = np.asarray(scores)
     y_true = np.asarray(trues)
-    set_size = 22
-
     count = 1
+    set_size = y_score.shape[0]
 
+    # thresholds = []
+    # tmp = 0
+    # for m in range(1, 10, 1):
+    #     tmp += 1
+    #     # print(m/np.float(100))
+    #     thresholds.append(m / np.float(100))
+    # for i in range(1, 10, 1):
+    #     thresholds.append(i / np.float(10))
+    # for m in range(90, 100, 1):
+    #     thresholds.append(m / np.float(100))
+    # tmp = 0
+    # for m in range(900, 1000, 1):
+    #     tmp += 1
+    #     if(tmp % 10 == 0):
+    #         thresholds.append(m / np.float(1000))
+    # thresholds = sorted(thresholds, reverse=True)
+    # thresholds = np.asarray(thresholds)
 
-    thresholds = []
-    tmp = 0
-    for m in range(1, 10, 1):
-        tmp += 1
-        # print(m/np.float(100))
-        thresholds.append(m / np.float(100))
-    for i in range(1, 10, 1):
-        thresholds.append(i / np.float(10))
-    for m in range(90, 100, 1):
-        thresholds.append(m / np.float(100))
-    tmp = 0
-    for m in range(900, 1000, 1):
-        tmp += 1
-        if(tmp % 10 == 0):
-            thresholds.append(m / np.float(1000))
+    thresholds = [0.3,0.37,0.4,0.5,0.6,0.7,0.76,0.92,0.98,0.99,0.998]
     thresholds = sorted(thresholds, reverse=True)
     thresholds = np.asarray(thresholds)
 
 
     TPR_list = []
     FP_num_list = []
-    #delete = [6, 7, 8, 19, 20,21]
-
-    delete = [6,7,8,9,10,11,12,13,19,20,21]
-    for t in range(1, thresholds.size):
+    delete = [18,19]
+    for t in range(0, len(thresholds)):
         tpr_sum = 0
         fp_sum = 0
         for i in range(set_size):
-            if i not in delete:
-                TPR, FP_num = getPara(y_score[i], y_true[i].astype(np.int),  thresholds[t], reso[i], windowsize)
+            if(i not in delete):
+                TPR, FP_num = getPara(y_score[i], y_true[i].astype(np.int),  thresholds[t], windowsize)
                 tpr_sum += TPR
                 fp_sum += FP_num
                 print(TPR, FP_num)
-        print(t, thresholds.size, thresholds[t], fp_sum / np.float(set_size - len(delete)), tpr_sum / np.float(set_size - len(delete)))
-        TPR_list.append(tpr_sum / np.float(set_size - len(delete)))
-        FP_num_list.append(fp_sum / np.float(set_size - len(delete)))
+        print(t, thresholds.size, thresholds[t], fp_sum / (np.float(set_size)-len(delete)), tpr_sum / (np.float(set_size )-len(delete)))
+        TPR_list.append(tpr_sum / (np.float(set_size)-len(delete)))
+        FP_num_list.append(fp_sum / (np.float(set_size)-len(delete)))
         #print( t, thresholds.size, fp_sum/np.float(set_size ), tpr_sum/np.float(set_size ))
         #TPR_list.append(tpr_sum/np.float(set_size ))
         #FP_num_list.append(fp_sum/np.float(set_size ))
     # np.save('./resolution/TPR_list_'+ str(windowsize) +'.npy', TPR_list)
     # np.save('./resolution/FP_num_list_'+ str(windowsize) +'.npy', FP_num_list)
-    np.save('./resolution/TPR_list_'+ 'special' +'.npy', TPR_list)
-    np.save('./resolution/FP_num_list_'+ 'special' +'.npy', FP_num_list)
+    np.save('./resolution/TPR_list_'+ 'special1' +'.npy', TPR_list)
+    np.save('./resolution/FP_num_list_'+ 'special1' +'.npy', FP_num_list)
 
 if __name__ == '__main__':
-    generate_plotnum(500)
+    generate_plotnum(420)
 
 
